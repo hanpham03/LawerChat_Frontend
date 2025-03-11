@@ -1,7 +1,7 @@
 export const loginDify = async () => {
   // Lấy thông tin đăng nhập từ biến môi trường
   const email = "hoaihanphamk123@gmail.com";
-  const password = "Han089203018443";
+  const password = "han089203018443";
   
   try {
     // Gửi yêu cầu POST để đăng nhập

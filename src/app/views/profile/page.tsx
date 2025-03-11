@@ -48,7 +48,6 @@ const ProfilePage: React.FC = () => {
         }
 
         const data = await response.json();
-        console.log(data);
         setUserProfile(data);
       } catch (err) {
         setError(err.message);

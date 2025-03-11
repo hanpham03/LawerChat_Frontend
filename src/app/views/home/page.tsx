@@ -16,24 +16,24 @@ export default function Home() {
   } = useChat();
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Phần chat chính, dùng flex để kéo dãn */}
-      <div className="flex-grow flex flex-col">
-        <Chat
-          messages={messages}
-          sendMessage={sendMessage}
-          isLoading={isLoading}
-        />
-      </div>
-
-      {/* Sidebar lịch sử chat, đảm bảo chiều cao vừa khớp */}
-      <div className="w-1/4 bg-gray-100 border-l flex flex-col h-full">
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
+      {/* Sidebar lịch sử chat (bên trái) */}
+      <div className="w-1.5/5 bg-white border-r flex flex-col h-full p-4 shadow-lg overflow-y-auto">
         <ChatHistory
           chatSessions={chatSessions}
           selectChatSession={selectChatSession}
           selectedSession={selectedSession}
           addNewChatSession={addNewChatSession}
           deleteChatSession={deleteChatSession}
+        />
+      </div>
+
+      {/* Phần chat chính (bên phải) */}
+      <div className="flex-grow flex flex-col p-6 bg-white shadow-lg rounded-lg">
+        <Chat
+          messages={messages}
+          sendMessage={sendMessage}
+          isLoading={isLoading}
         />
       </div>
     </div>

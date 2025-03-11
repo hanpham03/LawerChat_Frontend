@@ -28,7 +28,7 @@ export default function RootLayout({
         {/* Thêm các meta tag, link, title,... */}
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>My Next.js App</title>
+        <title>Lawer Chatbot</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -43,10 +43,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        {children}
-        <Toaster position="top-right" richColors />{" "}
-        {/* Đặt Toaster ở đây để hiển thị Sonner trên toàn bộ ứng dụng */}
+        <div className="flex flex-col h-screen">
+          <Navbar />
+          <div className="flex-1 overflow-hidden">{children}</div>
+        </div>
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

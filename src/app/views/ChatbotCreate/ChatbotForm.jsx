@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Cookies from "js-cookie"; // Import Cookies để lấy token từ cookie
 
 // Danh sách icon có sẵn để người dùng chọn
 const availableIcons = ["🤖", "😎", "🐱", "🦊", "👻"];
@@ -13,19 +14,40 @@ const availableIcons = ["🤖", "😎", "🐱", "🦊", "👻"];
 export default function ChatbotForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    user_id: 1,
+    user_id: null, // Để null, sẽ cập nhật sau khi giải mã token
     name: "newchatbot",
     description: "",
-    dify_chatbot_id: 1,
-    status: "active",
-    // Mặc định là emoji và chat, không cho chỉnh sửa
-    icon_type: "emoji",
     icon: "🤖", // icon mặc định
-    icon_background: "#FFEAD5",
     mode: "chat",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const apiBaseUrl = "http://localhost:3000/api/chatbots/create-chatbot";
+  const apiBaseUrl = "http://localhost:3001/api/chatbots/create-chatbot";
+  let token = localStorage.getItem("token") || Cookies.get("token");
+
+  // 👉 Lấy token từ localStorage hoặc cookie
+  useEffect(() => {
+    const getToken = () => {
+      if (!token) {
+        toast.error("Không tìm thấy token. Vui lòng đăng nhập lại.");
+        return;
+      }
+
+      try {
+        // Giải mã token để lấy user_id
+        const payload = JSON.parse(atob(token.split(".")[1])); // Giải mã JWT
+        if (payload.id) {
+          setFormData((prev) => ({ ...prev, user_id: payload.id }));
+        } else {
+          toast.error("Token không hợp lệ.");
+        }
+      } catch (error) {
+        console.error("Lỗi giải mã token:", error);
+        toast.error("Lỗi khi lấy thông tin người dùng.");
+      }
+    };
+
+    getToken();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,10 +61,9 @@ export default function ChatbotForm() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Lấy dify_token từ localStorage
-    const difyToken = localStorage.getItem("dify_token");
-    if (!difyToken) {
-      toast.error("Không tìm thấy dify_token. Vui lòng đăng nhập lại.");
+    // Kiểm tra user_id đã được cập nhật chưa
+    if (!formData.user_id) {
+      toast.error("Không lấy được ID người dùng. Vui lòng thử lại.");
       setIsLoading(false);
       return;
     }
@@ -52,25 +73,21 @@ export default function ChatbotForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${difyToken}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           user_id: formData.user_id,
           name: formData.name,
           description: formData.description,
-          dify_chatbot_id: formData.dify_chatbot_id,
-          status: formData.status,
           configuration: {
-            icon_type: formData.icon_type, // mặc định "emoji"
             icon: formData.icon,
-            icon_background: formData.icon_background,
-            mode: formData.mode, // mặc định "chat"
+            mode: formData.mode,
           },
         }),
       });
 
       const data = await response.json();
-
+      console.log("data: ", data);
       if (!response.ok) {
         throw new Error(data.message || "Tạo chatbot thất bại");
       }
@@ -122,31 +139,13 @@ export default function ChatbotForm() {
                     icon: icon,
                   }))
                 }
-                className={`text-3xl p-2 border rounded hover:border-green-600 transition-colors duration-200 ${formData.icon === icon
-                    ? "border-green-600"
-                    : "border-gray-300"
+                className={`text-3xl p-2 border rounded hover:border-green-600 transition-colors duration-200 ${formData.icon === icon ? "border-green-600" : "border-gray-300"
                   }`}
               >
                 {icon}
               </button>
             ))}
           </div>
-        </div>
-
-        <div>
-          <Label htmlFor="icon_background" className="block mb-1">
-            Màu Nền Icon
-          </Label>
-          <Input
-            id="icon_background"
-            name="icon_background"
-            type="text"
-            placeholder="Ví dụ: #FFEAD5"
-            value={formData.icon_background}
-            onChange={handleChange}
-            required
-            className="w-full"
-          />
         </div>
 
         <div>
@@ -164,7 +163,8 @@ export default function ChatbotForm() {
             className="w-full"
           />
         </div>
-        <Button type="submit" className="w-full mt-4" disabled={isLoading}>
+
+        <Button type="submit" className="w-full mt-4" disabled={isLoading || !formData.user_id}>
           {isLoading ? "Đang xử lý..." : "Tạo Chatbot"}
         </Button>
       </form>
