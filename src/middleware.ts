@@ -1,16 +1,18 @@
 // src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { toast } from "sonner";
 
 export function middleware(req: NextRequest) {
   // Lấy token từ cookie (cookie 'token' được set khi đăng nhập)
   const token = req.cookies.get("token")?.value;
 
   // Các đường dẫn không cần đăng nhập
-  const publicPaths = ["/login", "/register"];
+  const publicPaths = ["/login", "/register", "/"];
 
   // Nếu không có token và request không phải đến public paths, chuyển hướng về /login
   if (!token && !publicPaths.includes(req.nextUrl.pathname)) {
+    console.error("Vui lòng đăng nhập để tiếp tục!");
     return NextResponse.redirect(new URL("/login", req.url));
   }
 

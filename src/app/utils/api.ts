@@ -1,9 +1,20 @@
 const API_BASE_URL = "http://localhost:3001/api";
 
-export async function getChatSessions(userId: number, token: string) {
-  const res = await fetch(`${API_BASE_URL}/chat-sessions/user/${userId}`, {
+export async function getChatSessions(
+  userId: number,
+  token: string,
+  chatbotId?: number
+) {
+  let url = `${API_BASE_URL}/chat-sessions/user/${userId}`;
+
+  if (chatbotId) {
+    url = `${API_BASE_URL}/chat-sessions/chatbot/${chatbotId}`; // 🔹 API chỉ lấy phiên chat của chatbot
+  }
+
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
+
   return res.ok ? res.json() : [];
 }
 
@@ -14,14 +25,18 @@ export async function getMessages(sessionId: number, token: string) {
   return res.ok ? res.json() : [];
 }
 
-export async function startNewChatSession(userId: number, token: string) {
+export async function startNewChatSession(
+  userId: number,
+  token: string,
+  chatbotId: number
+) {
   const res = await fetch(`${API_BASE_URL}/chat-sessions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ user_id: userId, chatbot_id: 1 }),
+    body: JSON.stringify({ user_id: userId, chatbot_id: chatbotId }),
   });
   const data = await res.json();
   return res.ok ? data.sessionId : null;
@@ -31,7 +46,7 @@ export async function sendMessageToAPI(
   sessionId: number,
   text: string,
   token: string,
-  role: "user" | "assistant" // 🆕 Thêm tham số role
+  role: "user" | "assistant"
 ) {
   await fetch(`${API_BASE_URL}/messages`, {
     method: "POST",
@@ -42,11 +57,10 @@ export async function sendMessageToAPI(
     body: JSON.stringify({
       session_id: sessionId,
       content: text,
-      role: role, // 🆕 Truyền role vào body
+      role: role,
     }),
   });
 
-  // Nếu là tin nhắn từ user, gọi API chatbot
   if (role === "user") {
     const difyToken = localStorage.getItem("dify_token");
     if (!difyToken) return null;
@@ -63,14 +77,42 @@ export async function sendMessageToAPI(
     const data = await res.json();
     return data?.answer ?? null;
   }
-  return null; // Nếu là assistant, chỉ cần lưu vào DB, không cần gọi API chatbot
+  return null;
 }
 
 export async function deleteChatSessionAPI(sessionId: number, token: string) {
   const res = await fetch(`${API_BASE_URL}/chat-sessions/${sessionId}`, {
     method: "DELETE",
   });
-  console.log("deleteChatSessionAPI", res);
   const data = await res.json();
   return res.ok ? data.sessionId : null;
+}
+
+export async function getChatbotsInfor(token: string, id: int) {
+  const res = await fetch(`${API_BASE_URL}/chatbots/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    method: "GET",
+  });
+  return res.ok ? res.json() : [];
+}
+
+export async function getSessionByChatbotId(chatbotId: number, token: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:3001/api/chat-sessions/chatbot/${chatbotId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) throw new Error("⚠️ Failed to fetch chat sessions");
+
+    const sessions = await response.json();
+    return sessions; // ✅ Trả về danh sách phiên chat
+  } catch (error) {
+    console.error("🚨 Lỗi khi lấy phiên chat:", error);
+    return []; // ✅ Nếu lỗi, trả về mảng rỗng
+  }
 }

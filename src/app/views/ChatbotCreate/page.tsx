@@ -7,7 +7,10 @@ export default function CreateChatbotPage() {
       {/* <h1 className="text-2xl font-bold mb-6 text-center">Tạo Chatbot</h1> */}
       <ChatbotForm />
       <div className="text-center mt-4">
-        <Link href="/views/home" className="text-blue-500 hover:underline">
+        <Link
+          href="/views/ChatbotLists"
+          className="text-blue-500 hover:underline"
+        >
           Quay lại danh sách Chatbot
         </Link>
       </div>

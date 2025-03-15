@@ -44,7 +44,6 @@ export default function LoginForm() {
       if (response.ok && data.token) {
         // ✅ Lưu token vào localStorage
         localStorage.setItem("token", data.token);
-        console.log("✅ Đăng nhập thành công, token đã lưu vào localStorage");
       }
   
       if (!response.ok) {
@@ -57,7 +56,7 @@ export default function LoginForm() {
         await loginDify();
     
         // Chuyển hướng đến trang chính
-        router.push("/views/home");
+        router.push("/views/ChatbotLists");
       }
     } catch (err) {
       toast.error(`Lỗi đăng nhập: ${err.message}`);

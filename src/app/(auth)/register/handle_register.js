@@ -15,6 +15,9 @@ export default function RegisterForm() {
     password: "",
     confirmPassword: "",
   });
+
+  const [otp, setOtp] = useState(""); // 🔹 Biến lưu mã OTP nhập vào
+  const [isOtpSent, setIsOtpSent] = useState(false); // 🔹 Kiểm tra xem đã gửi OTP chưa
   const [isLoading, setIsLoading] = useState(false);
   const apiBaseUrl = "http://localhost:3001/api/auth";
 
@@ -26,46 +29,73 @@ export default function RegisterForm() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  // 👉 Gửi OTP đến email
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
+      toast.error("Mật khẩu không khớp!");
       setIsLoading(false);
       return;
     }
 
-    // Tạo object mới khớp với cấu trúc DB
-    const dataToSend = {
-      email: formData.email,
-      password: formData.password, // Backend sẽ xử lý hash password
-      full_name: formData.fullname, // Đổi fullname thành full_name
-      is_active: true, // Mặc định active
-    };
-
     try {
-      const response = await fetch(`${apiBaseUrl}/register`, {
+      const response = await fetch(`${apiBaseUrl}/sendOtp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(dataToSend), // Gửi object đã được format
+        body: JSON.stringify({ 
+          email: formData.email,
+          full_name: formData.fullname,
+      }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Đăng ký thất bại");
+        throw new Error(data.message || "Gửi OTP thất bại");
       }
 
-      // ✅ Hiển thị thông báo đăng ký thành công
-      toast.success("Đăng ký thành công! Bạn có thể đăng nhập ngay.");
+      toast.success("Mã OTP đã được gửi đến email của bạn!");
+      setIsOtpSent(true); // 🔹 Hiển thị ô nhập OTP
+    } catch (err) {
+      toast.error(`Lỗi gửi OTP: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
+  // 👉 Xác nhận OTP và hoàn tất đăng ký
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/verifyOtp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          otp,
+          password: formData.password,
+          full_name: formData.fullname,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Xác thực OTP thất bại");
+      }
+
+      toast.success("Đăng ký thành công!");
       router.push("/login");
     } catch (err) {
-      // ✅ Hiển thị thông báo lỗi khi đăng ký thất bại
-      toast.error(`Lỗi đăng ký: ${err.message}`);
+      toast.error(`Lỗi xác thực OTP: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +103,7 @@ export default function RegisterForm() {
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={isOtpSent ? handleVerifyOtp : handleSendOtp}>
         <div className="mb-4">
           <Label htmlFor="fullname">Họ và tên</Label>
           <Input
@@ -123,8 +153,29 @@ export default function RegisterForm() {
             required
           />
         </div>
+
+        {/* 🔹 Khi OTP đã được gửi, hiển thị ô nhập OTP */}
+        {isOtpSent && (
+          <div className="mb-6">
+            <Label htmlFor="otp">Nhập mã OTP</Label>
+            <Input
+              id="otp"
+              name="otp"
+              type="text"
+              placeholder="Nhập mã OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              required
+            />
+          </div>
+        )}
+
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Đang xử lý..." : "Đăng Ký"}
+          {isLoading
+            ? "Đang xử lý..."
+            : isOtpSent
+            ? "Xác nhận OTP"
+            : "Gửi mã OTP"}
         </Button>
       </form>
     </>

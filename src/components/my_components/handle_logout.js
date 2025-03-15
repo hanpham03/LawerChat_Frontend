@@ -26,5 +26,5 @@ const handleLogout = async () => {
     }
   };
   
-  module.exports = handleLogout;
+module.exports = handleLogout;
   

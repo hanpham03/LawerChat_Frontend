@@ -5,6 +5,16 @@ import { FaPlus, FaTrash, FaCommentDots } from "react-icons/fa";
 interface ChatSession {
   id: number;
   start_time: string;
+  chatbot_id: number; // Thêm thuộc tính chatbot_id để lọc đúng chatbot
+  user_id: number;
+}
+
+interface ChatbotInfo {
+  id: number;
+  user_id: number;
+  name: string;
+  description: string;
+  dify_chatbot_id: string;
 }
 
 interface ChatHistoryProps {
@@ -13,6 +23,7 @@ interface ChatHistoryProps {
   selectedSession: number | null;
   addNewChatSession: () => void;
   deleteChatSession: (sessionId: number) => void;
+  chatbotInfo: ChatbotInfo | null;
 }
 
 export default function ChatHistory({
@@ -21,34 +32,49 @@ export default function ChatHistory({
   selectedSession,
   addNewChatSession,
   deleteChatSession,
+  chatbotInfo,
 }: ChatHistoryProps) {
+  // ✅ Lọc chỉ những phiên chat thuộc chatbot hiện tại & đúng user
+  const filteredSessions = chatSessions.filter(
+    (session) =>
+      chatbotInfo &&
+      session.chatbot_id === chatbotInfo.id &&
+      session.user_id === chatbotInfo.user_id
+  );
+
   return (
     <div
       className="border-l bg-gray-50 flex flex-col shadow-lg rounded-lg"
       style={{ height: "calc(90vh - 64px)" }}
     >
+      {/* Tên Chatbot */}
+      <div className="p-2 text-center bg-blue-100 text-blue-800 font-semibold">
+        🤖 {chatbotInfo ? chatbotInfo.name : "Đang tải..."}
+      </div>
+
       {/* Tiêu đề + Nút Thêm */}
       <div className="p-4 flex justify-between items-center bg-white shadow-sm border-b">
-        <h2 className="text-lg font-semibold text-gray-700 flex items-center">
+        <h2 className="m-3 text-lg font-semibold text-gray-700 flex items-center">
           🗂️ Lịch sử Chat
         </h2>
         <button
           className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
           onClick={addNewChatSession}
         >
-          <FaPlus /> Thêm
+          <FaPlus />
+          Thêm
         </button>
       </div>
 
       {/* Danh sách phiên chat */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {chatSessions.length === 0 ? (
+        {filteredSessions.length === 0 ? (
           <p className="text-gray-500 text-center italic mt-4">
             Chưa có lịch sử chat.
           </p>
         ) : (
           <div className="space-y-2">
-            {chatSessions
+            {filteredSessions
               .sort(
                 (a, b) =>
                   new Date(b.start_time).getTime() -

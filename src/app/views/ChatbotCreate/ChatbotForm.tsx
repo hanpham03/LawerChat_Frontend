@@ -6,50 +6,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Cookies from "js-cookie"; // Import Cookies để lấy token từ cookie
+import Cookies from "js-cookie";
+import { handleChatbotTags } from "./ChatbotTags"; // ✅ Import file mới
 
-// Danh sách icon có sẵn để người dùng chọn
 const availableIcons = ["🤖", "😎", "🐱", "🦊", "👻"];
 
 export default function ChatbotForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    user_id: null, // Để null, sẽ cập nhật sau khi giải mã token
-    name: "newchatbot",
+    user_id: null,
+    name: "",
     description: "",
-    icon: "🤖", // icon mặc định
+    icon_background: "#FFEAD5",
+    icon: "🤖",
     mode: "chat",
   });
   const [isLoading, setIsLoading] = useState(false);
   const apiBaseUrl = "http://localhost:3001/api/chatbots/create-chatbot";
-  let token = localStorage.getItem("token") || Cookies.get("token");
+  const [email, setEmail] = useState("");
 
-  // 👉 Lấy token từ localStorage hoặc cookie
   useEffect(() => {
-    const getToken = () => {
-      if (!token) {
-        toast.error("Không tìm thấy token. Vui lòng đăng nhập lại.");
-        return;
-      }
+    const tokenFromStorage =
+      localStorage.getItem("token") || Cookies.get("token");
+    if (!tokenFromStorage) {
+      toast.error("Không tìm thấy token. Vui lòng đăng nhập lại.");
+      return;
+    }
 
-      try {
-        // Giải mã token để lấy user_id
-        const payload = JSON.parse(atob(token.split(".")[1])); // Giải mã JWT
-        if (payload.id) {
-          setFormData((prev) => ({ ...prev, user_id: payload.id }));
-        } else {
-          toast.error("Token không hợp lệ.");
-        }
-      } catch (error) {
-        console.error("Lỗi giải mã token:", error);
-        toast.error("Lỗi khi lấy thông tin người dùng.");
+    try {
+      const payload = JSON.parse(atob(tokenFromStorage.split(".")[1]));
+      if (payload.id) {
+        setFormData((prev) => ({ ...prev, user_id: payload.id }));
+        setEmail(payload.email);
+      } else {
+        toast.error("Token không hợp lệ.");
       }
-    };
-
-    getToken();
+    } catch (error) {
+      console.error("Lỗi giải mã token:", error);
+      toast.error("Lỗi khi lấy thông tin người dùng.");
+    }
   }, []);
 
-  const handleChange = (e) => {
+  const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -57,11 +55,10 @@ export default function ChatbotForm() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Kiểm tra user_id đã được cập nhật chưa
     if (!formData.user_id) {
       toast.error("Không lấy được ID người dùng. Vui lòng thử lại.");
       setIsLoading(false);
@@ -69,33 +66,42 @@ export default function ChatbotForm() {
     }
 
     try {
+      const dify_token =
+        localStorage.getItem("dify_token") || Cookies.get("dify_token");
+      if (!dify_token) {
+        toast.error("Token không hợp lệ. Vui lòng đăng nhập lại.");
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch(apiBaseUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${dify_token}`,
         },
         body: JSON.stringify({
           user_id: formData.user_id,
           name: formData.name,
           description: formData.description,
-          configuration: {
-            icon: formData.icon,
-            mode: formData.mode,
-          },
+          icon: formData.icon,
+          mode: formData.mode,
         }),
       });
 
       const data = await response.json();
-      console.log("data: ", data);
       if (!response.ok) {
         throw new Error(data.message || "Tạo chatbot thất bại");
       }
+      const chatbotId = data.chatbotId; // Lấy ID chatbot mới tạo
+      console.log("Chatbot ID:", chatbotId);
 
-      toast.success("Tạo chatbot thành công!");
+      // Gọi function từ `ChatbotTags.tsx`
+      const tagMessage = await handleChatbotTags(email, chatbotId, dify_token);
+      toast.success(tagMessage);
       router.push("/views/home");
-    } catch (err) {
-      toast.error(`Lỗi tạo chatbot: ${err.message}`);
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +129,6 @@ export default function ChatbotForm() {
           />
         </div>
 
-        {/* Phần chọn Icon */}
         <div>
           <Label htmlFor="icon" className="block mb-1">
             Chọn Icon
@@ -133,14 +138,12 @@ export default function ChatbotForm() {
               <button
                 key={icon}
                 type="button"
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    icon: icon,
-                  }))
-                }
-                className={`text-3xl p-2 border rounded hover:border-green-600 transition-colors duration-200 ${formData.icon === icon ? "border-green-600" : "border-gray-300"
-                  }`}
+                onClick={() => setFormData((prev) => ({ ...prev, icon }))}
+                className={`text-3xl p-2 border rounded hover:border-green-600 transition-colors duration-200 ${
+                  formData.icon === icon
+                    ? "border-green-600"
+                    : "border-gray-300"
+                }`}
               >
                 {icon}
               </button>
@@ -164,7 +167,11 @@ export default function ChatbotForm() {
           />
         </div>
 
-        <Button type="submit" className="w-full mt-4" disabled={isLoading || !formData.user_id}>
+        <Button
+          type="submit"
+          className="w-full mt-4"
+          disabled={isLoading || !formData.user_id}
+        >
           {isLoading ? "Đang xử lý..." : "Tạo Chatbot"}
         </Button>
       </form>

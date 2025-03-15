@@ -1,18 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import handle_logout from "./handle_logout";
 import { FaBalanceScale } from "react-icons/fa";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { jwtDecode } from "jwt-decode";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
-  // Ẩn Navbar nếu đang ở trang login hoặc register
+  // 🟢 Hàm lấy role từ token
+  const fetchRole = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setRole(null);
+      return;
+    }
+
+    try {
+      const decodedToken = jwtDecode<{ role?: string }>(token); // 🛠️ Giải mã token
+      setRole(decodedToken.role || null);
+    } catch (error) {
+      console.error("Lỗi giải mã token:", error);
+      setRole(null);
+    }
+  };
+
+  // 🟢 Lấy role ngay khi component mount + lắng nghe thay đổi trong localStorage
+  useEffect(() => {
+    fetchRole(); // Lấy role khi component được render lần đầu
+
+    // 🛠️ Lắng nghe thay đổi của localStorage
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "token") {
+        fetchRole(); // Cập nhật role ngay khi token thay đổi
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  // 🛑 Ẩn Navbar trên trang đăng nhập & đăng ký
   if (
     pathname === "/" ||
     pathname.startsWith("/login") ||
@@ -21,10 +57,14 @@ export default function Navbar() {
     return null;
   }
 
+  // 📝 Danh sách link điều hướng (Admin sẽ thấy "Huấn Luyện Chatbot")
   const navLinks = [
     { href: "/views/ChatbotLists", label: "Danh Sách Chatbot" },
     { href: "/views/pricing", label: "Bảng Giá" },
     { href: "/views/blog", label: "Bài Viết" },
+    ...(role === "admin"
+      ? [{ href: "/views/ConfigChatbot", label: "Huấn Luyện Chatbot" }]
+      : []),
   ];
 
   return (
@@ -120,7 +160,7 @@ export default function Navbar() {
             }}
             className="w-full text-left block rounded-md px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 hover:text-red-700"
           >
-            Logout
+            Đăng Xuất
           </button>
         </div>
       )}

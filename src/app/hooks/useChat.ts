@@ -7,96 +7,142 @@ import {
   deleteChatSessionAPI,
 } from "@/app/utils/api";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useSearchParams } from "next/navigation";
 
 export function useChat() {
   const { userId, token } = useAuth();
-  const [chatSessions, setChatSessions] = useState([]);
+  const searchParams = useSearchParams();
+  const [chatbotId, setChatbotId] = useState<string | null>(null);
+
+  const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [selectedSession, setSelectedSession] = useState<number | null>(null);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Lấy danh sách phiên chat khi userId thay đổi
+  // 🔹 Cập nhật chatbotId khi URL thay đổi
   useEffect(() => {
-    if (!userId || !token) return;
-    getChatSessions(userId, token).then(setChatSessions);
-  }, [userId, token]);
+    setChatbotId(searchParams.get("chatbotId"));
+  }, [searchParams]);
 
-  // Chọn phiên chat mới nhất
+  // 🔹 Chỉ lấy phiên chat của chatbot hiện tại
   useEffect(() => {
-    if (!selectedSession && chatSessions.length > 0) {
-      setSelectedSession(chatSessions[0].id);
+    if (!userId || !token || !chatbotId) return;
+
+    getChatSessions(userId, token, chatbotId)
+      .then((sessions) => {
+        setChatSessions([...sessions]); // ✅ Sao chép mảng để đảm bảo re-render
+      })
+      .catch((error) => console.error("Lỗi lấy danh sách phiên chat:", error));
+  }, [userId, token, chatbotId]);
+
+  // 🔹 Khi danh sách phiên chat thay đổi, chọn phiên mới nhất
+  useEffect(() => {
+    if (chatSessions.length > 0) {
+      // 🔹 Chọn phiên chat có ID lớn nhất (mới nhất)
+      const latestSession = chatSessions.reduce((prev, curr) =>
+        prev.id > curr.id ? prev : curr
+      );
+      setSelectedSession(latestSession.id);
     }
   }, [chatSessions]);
 
-  // Tải tin nhắn khi chọn phiên chat mới
+  // 🔹 Khi chọn phiên chat, tải tin nhắn tương ứng
   useEffect(() => {
     if (!selectedSession || !token) return;
-    getMessages(selectedSession, token).then(setMessages);
+
+    getMessages(selectedSession, token)
+      .then(setMessages)
+      .catch((error) => console.error("Lỗi lấy tin nhắn:", error));
   }, [selectedSession, token]);
 
-  // Gửi tin nhắn
+  // ✉️ Gửi tin nhắn
   const sendMessage = async (text: string) => {
     let sessionId = selectedSession;
+
     if (!sessionId) {
-      sessionId = await startNewChatSession(userId, token);
+      sessionId = await startNewChatSession(userId, token, chatbotId); // ✅ Truyền chatbotId
       if (!sessionId) return;
       setSelectedSession(sessionId);
     }
 
-    // Lưu tin nhắn user vào DB và gọi chatbot
     setMessages((prev) => [...prev, { text, role: "user" }]);
     setIsLoading(true);
 
-    const botResponse = await sendMessageToAPI(sessionId, text, token, "user");
-    console.log("bot response: ", botResponse);
-
-    if (botResponse) {
-      setMessages((prev) => [
-        ...prev,
-        { text: botResponse, role: "assistant" },
-      ]);
-
-      // 🛠 Lưu tin nhắn của bot vào database
-      await sendMessageToAPI(sessionId, botResponse, token, "assistant");
+    try {
+      const botResponse = await sendMessageToAPI(
+        sessionId,
+        text,
+        token,
+        "user"
+      );
+      if (botResponse) {
+        setMessages((prev) => [
+          ...prev,
+          { text: botResponse, role: "assistant" },
+        ]);
+        await sendMessageToAPI(sessionId, botResponse, token, "assistant"); // ✅ Lưu tin nhắn bot vào DB
+      }
+    } catch (error) {
+      console.error("Lỗi gửi tin nhắn:", error);
     }
 
     setIsLoading(false);
   };
 
-  // 🆕 Thêm phiên chat mới
+  // ➕ Thêm phiên chat mới
   const addNewChatSession = async () => {
-    if (!userId || !token) return;
+    if (!userId || !token || !chatbotId) return;
 
-    const sessionId = await startNewChatSession(userId, token);
+    const sessionId = await startNewChatSession(userId, token, chatbotId);
     if (!sessionId) return;
 
-    const newSession = { id: sessionId, start_time: new Date().toISOString() };
-    setChatSessions((prev) => [newSession, ...prev]); // Thêm vào danh sách
-    setSelectedSession(sessionId); // Chọn ngay session mới
+    const newSession = {
+      id: sessionId,
+      chatbot_id: chatbotId,
+      user_id: userId,
+      start_time: new Date().toISOString(),
+    };
+
+    // ✅ Cập nhật state ngay lập tức
+    setChatSessions((prev) => [newSession, ...prev]);
+    setSelectedSession(sessionId);
+
+    // ✅ Gọi API để đồng bộ danh sách chat mới nhất
+    try {
+      const updatedSessions = await getChatSessions(userId, token, chatbotId);
+      setChatSessions(updatedSessions);
+    } catch (error) {
+      console.error("Lỗi cập nhật danh sách phiên chat:", error);
+    }
   };
 
-  // 🆕 Xóa phiên chat
+  // ❌ Xóa phiên chat
   const deleteChatSession = async (sessionId: number) => {
     if (!token) return;
 
-    // ⚡ Cập nhật UI ngay lập tức bằng cách lọc bỏ session
     setChatSessions((prevSessions) => {
       const updatedSessions = prevSessions.filter((s) => s.id !== sessionId);
 
-      // 🛠 Nếu đang xóa session đang chọn, chọn session khác hoặc set null
       if (selectedSession === sessionId) {
         setSelectedSession(
           updatedSessions.length > 0 ? updatedSessions[0].id : null
         );
       }
 
-      return updatedSessions;
+      return [...updatedSessions]; // ✅ Sao chép mảng để React nhận ra thay đổi
     });
 
-    // 🛠 Xóa trên server
-    await deleteChatSessionAPI(sessionId, token);
+    try {
+      await deleteChatSessionAPI(sessionId, token);
+      console.log(`✅ Xóa session ${sessionId} thành công!`);
+    } catch (error) {
+      console.error("Lỗi xóa phiên chat:", error);
+    }
+  };
 
-    console.log(`✅ Xóa session ${sessionId} thành công!`);
+  // reset messages
+  const resetMessages = () => {
+    setMessages([]);
   };
 
   return {
@@ -106,7 +152,8 @@ export function useChat() {
     isLoading,
     sendMessage,
     selectChatSession: setSelectedSession,
-    addNewChatSession, // ✅ Thêm vào hook
+    addNewChatSession,
     deleteChatSession,
+    resetMessages,
   };
 }
