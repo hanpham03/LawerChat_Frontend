@@ -33,18 +33,19 @@ export default function Navbar() {
 
   // 🟢 Lấy role ngay khi component mount + lắng nghe thay đổi trong localStorage
   useEffect(() => {
-    fetchRole(); // Lấy role khi component được render lần đầu
+    fetchRole(); // Lấy role ngay khi component được render lần đầu
 
-    // 🛠️ Lắng nghe thay đổi của localStorage
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === "token") {
-        fetchRole(); // Cập nhật role ngay khi token thay đổi
-      }
+    // 🟢 Lắng nghe thay đổi trong cùng tab
+    const handleTokenChange = () => {
+      fetchRole();
     };
 
-    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("storage", handleTokenChange); // Lắng nghe từ tab khác
+    window.addEventListener("tokenChanged", handleTokenChange); // Lắng nghe từ cùng tab
+
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("storage", handleTokenChange);
+      window.removeEventListener("tokenChanged", handleTokenChange);
     };
   }, []);
 
@@ -57,15 +58,22 @@ export default function Navbar() {
     return null;
   }
 
-  // 📝 Danh sách link điều hướng (Admin sẽ thấy "Huấn Luyện Chatbot")
-  const navLinks = [
+  // 📝 Danh sách link điều hướng dành cho ADMIN
+  const adminNavLinks = [
+    { href: "/views/ManageChatbots", label: "Quản Lý Chatbots" },
+    { href: "/views/ManageBlog", label: "Quản Lý Bài Viết" },
+    { href: "/views/ConfigChatbot", label: "Huấn Luyện Chatbot" },
+  ];
+
+  // 📝 Danh sách link điều hướng dành cho USER
+  const userNavLinks = [
     { href: "/views/ChatbotLists", label: "Danh Sách Chatbot" },
     { href: "/views/pricing", label: "Bảng Giá" },
     { href: "/views/blog", label: "Bài Viết" },
-    ...(role === "admin"
-      ? [{ href: "/views/ConfigChatbot", label: "Huấn Luyện Chatbot" }]
-      : []),
   ];
+
+  // Chọn danh sách link phù hợp với role
+  const navLinks = role === "admin" ? adminNavLinks : userNavLinks;
 
   return (
     <header className="bg-white shadow sticky top-0 z-50 w-full">
@@ -94,9 +102,11 @@ export default function Navbar() {
 
           {/* Right side: Các nút hành động */}
           <div className="flex flex-1 items-center justify-end space-x-4">
-            <Button className="bg-green-600 text-white hover:bg-green-700 transition-colors">
-              <Link href="/views/ChatbotCreate">Tạo Chatbot</Link>
-            </Button>
+            {role !== "admin" && (
+              <Button className="bg-green-600 text-white hover:bg-green-700 transition-colors">
+                <Link href="/views/ChatbotCreate">Tạo Chatbot</Link>
+              </Button>
+            )}
             <Button className="bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
               <Link href="/views/profile">Tài Khoản</Link>
             </Button>
@@ -139,13 +149,15 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/views/chatbot"
-            className="block rounded-md px-3 py-2 text-base font-medium text-green-600 hover:bg-green-50"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Tạo Chatbot
-          </Link>
+          {role !== "admin" && (
+            <Link
+              href="/views/ChatbotCreate"
+              className="block rounded-md px-3 py-2 text-base font-medium text-green-600 hover:bg-green-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Tạo Chatbot
+            </Link>
+          )}
           <Link
             href="/views/profile"
             className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-green-50 hover:text-green-600"

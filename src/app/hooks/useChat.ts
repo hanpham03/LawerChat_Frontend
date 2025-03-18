@@ -5,6 +5,7 @@ import {
   sendMessageToAPI,
   startNewChatSession,
   deleteChatSessionAPI,
+  deleteChatbotUser,
 } from "@/app/utils/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useSearchParams } from "next/navigation";
@@ -145,6 +146,45 @@ export function useChat() {
     setMessages([]);
   };
 
+  const deleteChatbot = async (
+    chatbotId: number,
+    dify_chatbot_id: string,
+    token: string
+  ) => {
+    if (!chatbotId || !dify_chatbot_id || !token) {
+      console.error("❌ Thiếu thông tin để xóa chatbot.");
+      return;
+    }
+
+    try {
+      // Gọi API để xóa chatbot
+      const response = await deleteChatbotUser(
+        chatbotId,
+        dify_chatbot_id,
+        token
+      );
+
+      if (response?.message === "Chatbot deleted successfully") {
+        console.log(`✅ Chatbot ${chatbotId} đã được xóa thành công!`);
+
+        // Cập nhật lại danh sách chatbot sau khi xóa
+        setChatSessions((prevSessions) =>
+          prevSessions.filter((s) => s.chatbot_id !== chatbotId)
+        );
+
+        // Nếu chatbot bị xóa là chatbot đang được chọn, reset state
+        if (chatbotId === selectedSession) {
+          setSelectedSession(null);
+          setMessages([]);
+        }
+      } else {
+        console.error("⚠️ Không thể xóa chatbot:", response);
+      }
+    } catch (error) {
+      console.error("🚨 Lỗi khi xóa chatbot:", error);
+    }
+  };
+
   return {
     messages,
     chatSessions,
@@ -155,5 +195,6 @@ export function useChat() {
     addNewChatSession,
     deleteChatSession,
     resetMessages,
+    deleteChatbot,
   };
 }

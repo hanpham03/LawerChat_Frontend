@@ -24,6 +24,7 @@ export const loginDify = async () => {
     
     const difyToken = difyData.data.access_token;
     localStorage.setItem("dify_token", difyToken);
+    window.dispatchEvent(new Event("storage"));
 
     // tôi muốn lấy id từ access_token!!
   } catch (error) {

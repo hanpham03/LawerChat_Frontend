@@ -116,3 +116,30 @@ export async function getSessionByChatbotId(chatbotId: number, token: string) {
     return []; // ✅ Nếu lỗi, trả về mảng rỗng
   }
 }
+
+export async function deleteChatbotUser(
+  chatbotId: number,
+  dify_chatbot_id: string,
+  dify_token: string
+) {
+  try {
+    const response = await fetch(
+      `http://localhost:3001/api/chatbots/${chatbotId}`, // Chỉ truyền chatbotId vào URL
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${dify_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ dify_chatbot_id }), // Truyền dify_chatbot_id qua body
+      }
+    );
+
+    if (!response.ok) throw new Error("⚠️ Failed to delete chatbot");
+
+    const del = await response.json();
+    return del;
+  } catch (error) {
+    console.error("🚨 Lỗi khi xóa chatbot:", error);
+  }
+}

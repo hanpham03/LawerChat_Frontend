@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea"; // Thêm Textarea để nhập prompt dài
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Cookies from "js-cookie";
-import { handleChatbotTags } from "./ChatbotTags"; // ✅ Import file mới
+import { handleChatbotTags } from "./ChatbotTags";
 
 const availableIcons = ["🤖", "😎", "🐱", "🦊", "👻"];
 
@@ -17,6 +18,7 @@ export default function ChatbotForm() {
     user_id: null,
     name: "",
     description: "",
+    prompt: "", // Thêm trường prompt cho chatbot
     icon_background: "#FFEAD5",
     icon: "🤖",
     mode: "chat",
@@ -84,8 +86,9 @@ export default function ChatbotForm() {
           user_id: formData.user_id,
           name: formData.name,
           description: formData.description,
+          prompt: formData.prompt,
           icon: formData.icon,
-          mode: formData.mode,
+          mode: "chat",
         }),
       });
 
@@ -99,7 +102,7 @@ export default function ChatbotForm() {
       // Gọi function từ `ChatbotTags.tsx`
       const tagMessage = await handleChatbotTags(email, chatbotId, dify_token);
       toast.success(tagMessage);
-      router.push("/views/home");
+      router.push("/views/ChatbotLists");
     } catch (err: any) {
       toast.error(`Lỗi: ${err.message}`);
     } finally {
@@ -153,7 +156,8 @@ export default function ChatbotForm() {
 
         <div>
           <Label htmlFor="description" className="block mb-1">
-            Mô tả
+            Mô tả{" "}
+            <span className="text-gray-500 text-sm">(không bắt buộc)</span>
           </Label>
           <Input
             id="description"
@@ -162,8 +166,22 @@ export default function ChatbotForm() {
             placeholder="Nhập mô tả cho chatbot"
             value={formData.description}
             onChange={handleChange}
-            required
             className="w-full"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="prompt" className="block mb-1">
+            Prompt Chatbot
+          </Label>
+          <Textarea
+            id="prompt"
+            name="prompt"
+            placeholder="Nhập prompt cho chatbot của bạn"
+            value={formData.prompt}
+            onChange={handleChange}
+            required
+            className="w-full min-h-32"
           />
         </div>
 
