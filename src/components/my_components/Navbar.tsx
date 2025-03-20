@@ -13,6 +13,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [role, setRole] = useState<string | null>(null);
+  const [userid, setUserId] = useState<number | null>(null);
 
   // 🟢 Hàm lấy role từ token
   const fetchRole = () => {
@@ -24,6 +25,8 @@ export default function Navbar() {
 
     try {
       const decodedToken = jwtDecode<{ role?: string }>(token); // 🛠️ Giải mã token
+      const userid = jwtDecode<{ id?: number }>(token); // 🛠️ Giải mã token
+      setUserId(userid);
       setRole(decodedToken.role || null);
     } catch (error) {
       console.error("Lỗi giải mã token:", error);
@@ -77,12 +80,12 @@ export default function Navbar() {
 
   return (
     <header className="bg-white shadow sticky top-0 z-50 w-full">
-      <div className="px-4 sm:px-6 lg:px-8 max-w-full">
+      <div className="px-4 sm:px-6 lg:px-8 max-w-screen-xl mx-auto">
         <div className="flex h-16 items-center justify-between">
           {/* Left side: Logo và các link điều hướng */}
           <div className="flex flex-1 items-center">
             <FaBalanceScale size={28} className="text-green-600" />
-            <Link href="/views/home">
+            <Link href="/views/LawerChatHome">
               <h1 className="ml-2 text-xl font-bold text-green-600 hover:text-green-700 transition-colors">
                 LawerChat
               </h1>

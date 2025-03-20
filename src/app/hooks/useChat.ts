@@ -57,11 +57,11 @@ export function useChat() {
   }, [selectedSession, token]);
 
   // ✉️ Gửi tin nhắn
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, dify_chatbot_id?: string) => {
     let sessionId = selectedSession;
 
     if (!sessionId) {
-      sessionId = await startNewChatSession(userId, token, chatbotId); // ✅ Truyền chatbotId
+      sessionId = await startNewChatSession(userId, token, chatbotId);
       if (!sessionId) return;
       setSelectedSession(sessionId);
     }
@@ -70,21 +70,26 @@ export function useChat() {
     setIsLoading(true);
 
     try {
+      console.log("📤 Gửi tin nhắn:", text);
+      console.log("📌 dify_chatbot_id:", dify_chatbot_id);
+
       const botResponse = await sendMessageToAPI(
         sessionId,
         text,
         token,
-        "user"
+        "user",
+        dify_chatbot_id || chatbotId // ✅ Nếu không có `dify_chatbot_id`, dùng `chatbotId`
       );
+
       if (botResponse) {
         setMessages((prev) => [
           ...prev,
           { text: botResponse, role: "assistant" },
         ]);
-        await sendMessageToAPI(sessionId, botResponse, token, "assistant"); // ✅ Lưu tin nhắn bot vào DB
+        await sendMessageToAPI(sessionId, botResponse, token, "assistant");
       }
     } catch (error) {
-      console.error("Lỗi gửi tin nhắn:", error);
+      console.error("❌ Lỗi khi gửi tin nhắn:", error);
     }
 
     setIsLoading(false);
@@ -92,7 +97,10 @@ export function useChat() {
 
   // ➕ Thêm phiên chat mới
   const addNewChatSession = async () => {
-    if (!userId || !token || !chatbotId) return;
+    if (!userId || !token || !chatbotId) {
+      alert("❌ Thiếu thông tin để tạo phiên chat mới.");
+      return;
+    }
 
     const sessionId = await startNewChatSession(userId, token, chatbotId);
     if (!sessionId) return;

@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 export default function Home() {
   const searchParams = useSearchParams();
   const chatbotId = searchParams.get("chatbotId"); // Lấy chatbotId từ URL
+  const dify_chatbot_id = searchParams.get("difyChatbotId"); // Lấy difyC_chatbot_id từ URL
 
   const {
     messages,
@@ -62,7 +63,7 @@ export default function Home() {
       <div className="flex-grow flex flex-col p-6 bg-white shadow-lg rounded-lg">
         <Chat
           messages={messages}
-          sendMessage={sendMessage}
+          sendMessage={(message) => sendMessage(message, dify_chatbot_id)} // ✅ Đảo lại thứ tự tham số
           isLoading={isLoading}
         />
       </div>

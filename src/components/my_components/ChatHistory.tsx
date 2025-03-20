@@ -49,7 +49,7 @@ export default function ChatHistory({
     >
       {/* Tên Chatbot */}
       <div className="p-2 text-center bg-blue-100 text-blue-800 font-semibold">
-        🤖 {chatbotInfo ? chatbotInfo.name : "Đang tải..."}
+        🤖 {chatbotInfo ? chatbotInfo.name : "LawerChat"}
       </div>
 
       {/* Tiêu đề + Nút Thêm */}

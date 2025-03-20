@@ -3,7 +3,12 @@ import { Send, Loader } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-export default function Chat({ messages, sendMessage, isLoading }) {
+export default function Chat({
+  messages,
+  sendMessage,
+  isLoading,
+  dify_chatbot_id,
+}) {
   const [inputText, setInputText] = useState("");
   const chatEndRef = useRef(null);
 
@@ -13,7 +18,7 @@ export default function Chat({ messages, sendMessage, isLoading }) {
 
   const handleSend = () => {
     if (inputText.trim()) {
-      sendMessage(inputText, "user");
+      sendMessage(inputText, dify_chatbot_id); // ✅ Truyền chatbotId đúng cách
       setInputText("");
     }
   };

@@ -46,8 +46,10 @@ export async function sendMessageToAPI(
   sessionId: number,
   text: string,
   token: string,
-  role: "user" | "assistant"
+  role: "user" | "assistant",
+  dify_chatbot_id?: string
 ) {
+  console.log(sessionId, text, token, role);
   await fetch(`${API_BASE_URL}/messages`, {
     method: "POST",
     headers: {
@@ -63,20 +65,46 @@ export async function sendMessageToAPI(
 
   if (role === "user") {
     const difyToken = localStorage.getItem("dify_token");
-    if (!difyToken) return null;
+    if (!difyToken) {
+      console.warn("⚠ Không tìm thấy token của Dify!");
+      return null;
+    }
 
-    const res = await fetch(`${API_BASE_URL}/chatbots/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${difyToken}`,
-      },
-      body: JSON.stringify({ query: text }),
-    });
+    const requestBody: Record<string, any> = { query: text };
+    if (dify_chatbot_id) {
+      requestBody.dify_chatbot_id = dify_chatbot_id;
+    }
 
-    const data = await res.json();
-    return data?.answer ?? null;
+    console.log(
+      "📤 Request gửi đến Dify:",
+      JSON.stringify(requestBody, null, 2)
+    );
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/chatbots/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${difyToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        console.error("❌ Lỗi API:", res.status, await res.text());
+        return null;
+      }
+
+      const data = await res.json();
+      console.log("🔍 API Response:", JSON.stringify(data, null, 2));
+
+      return data?.answer?.trim() || null;
+    } catch (error) {
+      console.error("❌ Lỗi khi gọi API Dify:", error);
+      return null;
+    }
   }
+
   return null;
 }
 

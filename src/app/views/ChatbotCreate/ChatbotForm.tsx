@@ -4,104 +4,107 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; // Thêm Textarea để nhập prompt dài
+import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Cookies from "js-cookie";
 import { handleChatbotTags } from "./ChatbotTags";
+import ProviderModelSelector from "@/components/my_components/ProviderModelSelector";
 
 const availableIcons = ["🤖", "😎", "🐱", "🦊", "👻"];
 
+const providerMapping: { [key: string]: string } = {
+  OpenRouter: "openrouter",
+  NVIDIA: "nvidia",
+  "Fireworks AI": "fireworks",
+};
+
 export default function ChatbotForm() {
   const router = useRouter();
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+
   const [formData, setFormData] = useState({
     user_id: null,
     name: "",
     description: "",
-    prompt: "", // Thêm trường prompt cho chatbot
-    icon_background: "#FFEAD5",
+    prompt: "",
     icon: "🤖",
+    provider: "OpenRouter",
+    model: "openai/gpt-3.5-turbo",
     mode: "chat",
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const apiBaseUrl = "http://localhost:3001/api/chatbots/create-chatbot";
-  const [email, setEmail] = useState("");
 
   useEffect(() => {
-    const tokenFromStorage =
-      localStorage.getItem("token") || Cookies.get("token");
-    if (!tokenFromStorage) {
-      toast.error("Không tìm thấy token. Vui lòng đăng nhập lại.");
-      return;
-    }
+    const token = localStorage.getItem("token") || Cookies.get("token");
+    if (!token) return toast.error("Không tìm thấy token, vui lòng đăng nhập.");
 
     try {
-      const payload = JSON.parse(atob(tokenFromStorage.split(".")[1]));
-      if (payload.id) {
-        setFormData((prev) => ({ ...prev, user_id: payload.id }));
-        setEmail(payload.email);
-      } else {
-        toast.error("Token không hợp lệ.");
-      }
-    } catch (error) {
-      console.error("Lỗi giải mã token:", error);
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setFormData((prev) => ({ ...prev, user_id: payload.id }));
+      setEmail(payload.email || "");
+    } catch {
       toast.error("Lỗi khi lấy thông tin người dùng.");
     }
   }, []);
 
   const handleChange = (e: any) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (!formData.user_id) {
-      toast.error("Không lấy được ID người dùng. Vui lòng thử lại.");
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const dify_token =
         localStorage.getItem("dify_token") || Cookies.get("dify_token");
-      if (!dify_token) {
-        toast.error("Token không hợp lệ. Vui lòng đăng nhập lại.");
-        setIsLoading(false);
-        return;
-      }
+      if (!dify_token) throw new Error("Token không hợp lệ.");
+      console.log(
+        "Dữ liệu gửi lên server:",
+        JSON.stringify(
+          {
+            user_id: formData.user_id,
+            name: formData.name,
+            description: formData.description,
+            prompt: formData.prompt,
+            icon: formData.icon,
+            provider: providerMapping[formData.provider] || formData.provider, // Chuyển thành chữ thường
+            model: formData.model,
+            mode: "chat", // Thêm mode mặc định
+          },
+          null,
+          2
+        )
+      );
 
-      const response = await fetch(apiBaseUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${dify_token}`,
-        },
-        body: JSON.stringify({
-          user_id: formData.user_id,
-          name: formData.name,
-          description: formData.description,
-          prompt: formData.prompt,
-          icon: formData.icon,
-          mode: "chat",
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:3001/api/chatbots/create-chatbot",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${dify_token}`,
+          },
+          body: JSON.stringify({
+            user_id: formData.user_id,
+            name: formData.name,
+            description: formData.description,
+            prompt: formData.prompt,
+            icon: formData.icon,
+            provider: providerMapping[formData.provider] || formData.provider, // Chuyển thành chữ thường
+            nameModel: formData.model,
+            mode: "chat", // Thêm mode mặc định
+          }),
+        }
+      );
 
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Tạo chatbot thất bại");
-      }
-      const chatbotId = data.chatbotId; // Lấy ID chatbot mới tạo
-      console.log("Chatbot ID:", chatbotId);
+      if (!response.ok) throw new Error(data.message || "Tạo chatbot thất bại");
 
-      // Gọi function từ `ChatbotTags.tsx`
-      const tagMessage = await handleChatbotTags(email, chatbotId, dify_token);
-      toast.success(tagMessage);
+      await handleChatbotTags(email, data.chatbotId, dify_token);
+      toast.success("Tạo chatbot thành công!");
       router.push("/views/ChatbotLists");
     } catch (err: any) {
       toast.error(`Lỗi: ${err.message}`);
@@ -111,80 +114,61 @@ export default function ChatbotForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-8 bg-white p-8 rounded-lg shadow-lg">
+    <div className="max-w-xl mx-auto my-8 bg-white p-8 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-center text-green-600">
         Tạo Chatbot Mới
       </h2>
+
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Tên Chatbot */}
         <div>
-          <Label htmlFor="name" className="block mb-1">
-            Tên Chatbot
-          </Label>
+          <Label htmlFor="name">Tên Chatbot</Label>
           <Input
             id="name"
             name="name"
-            type="text"
             placeholder="Nhập tên chatbot"
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full"
           />
         </div>
 
+        {/* Mô tả */}
         <div>
-          <Label htmlFor="icon" className="block mb-1">
-            Chọn Icon
-          </Label>
-          <div className="flex space-x-4">
-            {availableIcons.map((icon) => (
-              <button
-                key={icon}
-                type="button"
-                onClick={() => setFormData((prev) => ({ ...prev, icon }))}
-                className={`text-3xl p-2 border rounded hover:border-green-600 transition-colors duration-200 ${
-                  formData.icon === icon
-                    ? "border-green-600"
-                    : "border-gray-300"
-                }`}
-              >
-                {icon}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="description" className="block mb-1">
-            Mô tả{" "}
-            <span className="text-gray-500 text-sm">(không bắt buộc)</span>
-          </Label>
+          <Label htmlFor="description">Mô tả (Không bắt buộc)</Label>
           <Input
             id="description"
             name="description"
-            type="text"
-            placeholder="Nhập mô tả cho chatbot"
+            placeholder="Nhập mô tả"
             value={formData.description}
             onChange={handleChange}
-            className="w-full"
           />
         </div>
 
+        {/* Prompt */}
         <div>
-          <Label htmlFor="prompt" className="block mb-1">
-            Prompt Chatbot
-          </Label>
+          <Label htmlFor="prompt">Prompt Chatbot</Label>
           <Textarea
             id="prompt"
             name="prompt"
-            placeholder="Nhập prompt cho chatbot của bạn"
+            placeholder="Nhập prompt"
             value={formData.prompt}
             onChange={handleChange}
             required
-            className="w-full min-h-32"
           />
         </div>
 
+        {/* Chọn Provider & Model */}
+        <ProviderModelSelector
+          provider={formData.provider}
+          model={formData.model}
+          onProviderChange={(provider) =>
+            setFormData((prev) => ({ ...prev, provider }))
+          }
+          onModelChange={(model) => setFormData((prev) => ({ ...prev, model }))}
+        />
+
+        {/* Nút Submit */}
         <Button
           type="submit"
           className="w-full mt-4"
