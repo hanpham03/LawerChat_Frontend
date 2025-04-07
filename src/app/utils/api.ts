@@ -81,6 +81,7 @@ export async function sendMessageToAPI(
     );
 
     try {
+      console.log("abcd: ", difyToken);
       const res = await fetch(`${API_BASE_URL}/chatbots/chat`, {
         method: "POST",
         headers: {
@@ -89,6 +90,7 @@ export async function sendMessageToAPI(
         },
         body: JSON.stringify(requestBody),
       });
+      console.log("ress: ", res);
 
       if (!res.ok) {
         console.error("❌ Lỗi API:", res.status, await res.text());

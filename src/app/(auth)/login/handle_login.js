@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 import { loginDify } from "./handle_loginDify";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function LoginForm() {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const apiBaseUrl = "http://localhost:3001/api/auth";
 
   const handleChange = (e) => {
@@ -25,10 +27,14 @@ export default function LoginForm() {
     }));
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-  
+
     try {
       // Bước 1: Đăng nhập vào hệ thống chính, gửi credentials để nhận cookie
       const response = await fetch(`${apiBaseUrl}/login`, {
@@ -39,22 +45,22 @@ export default function LoginForm() {
         body: JSON.stringify(formData),
         credentials: "include", // Đảm bảo cookie được gửi/nhận
       });
-  
+
       const data = await response.json();
       if (response.ok && data.token) {
         // ✅ Lưu token vào localStorage
         localStorage.setItem("token", data.token);
       }
-  
+
       if (!response.ok) {
         throw new Error(data.message || "Đăng nhập thất bại");
       } else {
         // Không cần lưu token vào localStorage nữa vì đã set trong cookie từ backend
         toast.success("Đăng nhập thành công!");
-    
+
         // Bước 2: Đăng nhập vào Dify (Gọi hàm loginDify)
         await loginDify();
-    
+
         // Chuyển hướng đến trang chính
         router.push("/views/ChatbotLists");
       }
@@ -82,15 +88,29 @@ export default function LoginForm() {
         </div>
         <div className="mb-6">
           <Label htmlFor="password">Mật khẩu</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Nhập mật khẩu"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Nhập mật khẩu"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
+            >
+              {showPassword ? (
+                <EyeOff size={20} className="text-gray-500" />
+              ) : (
+                <Eye size={20} className="text-gray-500" />
+              )}
+            </button>
+          </div>
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Đang xử lý..." : "Đăng Nhập"}

@@ -8,17 +8,16 @@ import { useRouter } from "next/navigation";
 import { getSessionByChatbotId, startNewChatSession } from "@/app/utils/api";
 import { useChat } from "@/app/hooks/useChat";
 
-// Cập nhật interface Chatbot để thêm các thuộc tính cần thiết
 interface Chatbot {
   id: number;
   name: string;
   description?: string;
-  dify_chatbot_id: string; // Thêm dify_chatbot_id
-  isFixed?: boolean; // Thêm thuộc tính để nhận biết chatbot không thể xóa
+  dify_chatbot_id: string;
+  isFixed?: boolean;
 }
 
 interface DecodedToken {
-  id: string; // Đảm bảo khớp với token trả về từ server
+  id: string;
 }
 
 export default function ChatbotList() {
@@ -30,16 +29,15 @@ export default function ChatbotList() {
   const router = useRouter();
   const { deleteChatbot } = useChat();
 
-  // Định nghĩa chatbot đặc biệt
+  // Chatbot cố định: Tư vấn luật doanh nghiệp
   const specialChatbot: Chatbot = {
-    id: 0, // ID đặc biệt để phân biệt
+    id: 0,
     name: "Chatbot Tư vấn luật doanh nghiệp",
     description: "Hỗ trợ tư vấn luật doanh nghiệp 24/7",
-    dify_chatbot_id: "special_dify_id", // Thay bằng ID thực tế từ Dify nếu có
-    isFixed: true, // Đánh dấu là không thể xóa
+    dify_chatbot_id: "special_dify_id",
+    isFixed: true,
   };
 
-  // Lấy user_id từ token trong localStorage
   useEffect(() => {
     const difyToken = localStorage.getItem("dify_token");
     if (!difyToken) {
@@ -60,7 +58,6 @@ export default function ChatbotList() {
     }
   }, []);
 
-  // Gọi API lấy tất cả chatbot hiện tại trong Dify
   useEffect(() => {
     const fetchChatbotsDify = async () => {
       if (!difyToken) return;
@@ -94,7 +91,6 @@ export default function ChatbotList() {
     fetchChatbotsDify();
   }, [difyToken]);
 
-  // Gọi API lấy tất cả chatbot của một user
   useEffect(() => {
     if (!userId) return;
 
@@ -150,14 +146,11 @@ export default function ChatbotList() {
     dify_chatbot_id: string
   ) => {
     try {
-      // Special case for the law chatbot (ID: 0)
       if (chatbotId === 0) {
-        // Redirect directly to the lawyer chat home page
         router.push(`/views/LawerChatHome`);
         return;
       }
 
-      // For other chatbots, continue with the existing logic
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Không tìm thấy token!");
       const dify_token = localStorage.getItem("dify_token");
@@ -186,13 +179,9 @@ export default function ChatbotList() {
     }
   };
 
-  // Lọc danh sách chatbot hiển thị
   const filteredChatbots = chatbots.filter((bot) =>
     listChatbot.some((difyBot) => difyBot.id === bot.dify_chatbot_id)
   );
-
-  // Kết hợp chatbot đặc biệt với danh sách filteredChatbots
-  const displayChatbots = [specialChatbot, ...filteredChatbots];
 
   return (
     <div className="w-full mx-auto p-6 bg-white shadow-xl rounded-xl border border-gray-200">
@@ -205,90 +194,91 @@ export default function ChatbotList() {
           Không tìm thấy thông tin người dùng!
         </p>
       ) : (
-        <>
-          {displayChatbots.length === 1 && filteredChatbots.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-xl text-gray-600 mb-6">
-                Chưa có chatbot nào được tạo, hãy tạo chatbot mới để chat với
-                chúng tôi ngay!
-              </p>
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleAddChatbot}
-                  className="flex items-center gap-2 text-lg px-6 py-3 bg-green-500 hover:bg-green-600 transition-all shadow-lg"
+        <div>
+          {/* Chatbot cố định: Tư vấn luật doanh nghiệp */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <Card
+              key={specialChatbot.id}
+              className="min-w-[250px] h-[200px] flex flex-col justify-between shadow-lg border rounded-lg cursor-pointer hover:bg-gray-100 transition"
+              onClick={() =>
+                handleChatbotClick(
+                  specialChatbot.id,
+                  specialChatbot.dify_chatbot_id
+                )
+              }
+            >
+              <div className="flex flex-col items-center pt-4">
+                <CardContent className="text-xl font-semibold text-center p-2">
+                  🤖 {specialChatbot.name}
+                </CardContent>
+                <CardContent className="text-sm font-semibold text-center p-2 overflow-hidden max-h-[60px]">
+                  <div className="line-clamp-2">
+                    {specialChatbot.description}
+                  </div>
+                </CardContent>
+              </div>
+              {/* Không hiển thị nút Cài đặt và Xóa cho chatbot cố định */}
+            </Card>
+
+            {/* Các chatbot khác từ API */}
+            {filteredChatbots.length > 0 &&
+              filteredChatbots.map((bot) => (
+                <Card
+                  key={bot.id}
+                  className="min-w-[250px] h-[200px] flex flex-col justify-between shadow-lg border rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                  onClick={() =>
+                    handleChatbotClick(bot.id, bot.dify_chatbot_id)
+                  }
                 >
-                  <Plus className="w-6 h-6" /> Thêm Chatbot
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {displayChatbots.map((bot) => (
-                  <Card
-                    key={bot.id}
-                    className="min-w-[250px] h-[200px] flex flex-col justify-between shadow-lg border rounded-lg cursor-pointer hover:bg-gray-100 transition"
-                    onClick={() =>
-                      handleChatbotClick(bot.id, bot.dify_chatbot_id)
-                    }
-                  >
-                    <div className="flex flex-col items-center pt-4">
-                      <CardContent className="text-xl font-semibold text-center p-2">
-                        🤖 {bot.name}
-                      </CardContent>
-                      <CardContent className="text-sm font-semibold text-center p-2 overflow-hidden max-h-[60px]">
-                        <div className="line-clamp-2">{bot.description}</div>
-                      </CardContent>
-                    </div>
+                  <div className="flex flex-col items-center pt-4">
+                    <CardContent className="text-xl font-semibold text-center p-2">
+                      🤖 {bot.name}
+                    </CardContent>
+                    <CardContent className="text-sm font-semibold text-center p-2 overflow-hidden max-h-[60px]">
+                      <div className="line-clamp-2">{bot.description}</div>
+                    </CardContent>
+                  </div>
 
-                    <div className="flex justify-center items-center w-full px-4 mb-4 gap-4">
-                      {/* Chỉ hiển thị nút Cài đặt nếu không phải chatbot đặc biệt */}
-                      {!bot.isFixed && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl shadow-md hover:bg-gray-200 transition-all duration-200"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(
-                              `/views/ChatbotConfig_User?ChatbotId=${bot.id}`
-                            );
-                          }}
-                        >
-                          ⚙️ Cài đặt
-                        </Button>
-                      )}
+                  <div className="flex justify-center items-center w-full px-4 mb-4 gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-xl shadow-md hover:bg-gray-200 transition-all duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(
+                          `/views/ChatbotConfig_User?ChatbotId=${bot.id}`
+                        );
+                      }}
+                    >
+                      ⚙️ Cài đặt
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-xl shadow-md hover:bg-red-600 transition-all duration-200"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await removeChatbot(bot.id, bot.dify_chatbot_id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" /> Xóa
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+          </div>
 
-                      {/* Chỉ hiển thị nút Xóa nếu không phải chatbot đặc biệt */}
-                      {!bot.isFixed && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-xl shadow-md hover:bg-red-600 transition-all duration-200"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await removeChatbot(bot.id, bot.dify_chatbot_id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" /> Xóa
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="mt-4 flex justify-center">
-                <Button
-                  onClick={handleAddChatbot}
-                  className="flex items-center gap-2 text-lg px-6 py-3 bg-green-500 hover:bg-green-600 transition-all shadow-lg"
-                >
-                  <Plus className="w-6 h-6" /> Thêm Chatbot
-                </Button>
-              </div>
-            </>
-          )}
-        </>
+          {/* Nút Thêm Chatbot */}
+          <div className="mt-4 flex justify-center">
+            <Button
+              onClick={handleAddChatbot}
+              className="flex items-center gap-2 text-lg px-6 py-3 bg-green-500 hover:bg-green-600 transition-all shadow-lg"
+            >
+              <Plus className="w-6 h-6" /> Thêm Chatbot
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
