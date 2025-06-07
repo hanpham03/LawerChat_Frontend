@@ -27,7 +27,7 @@ export default function ChatbotConfigPage() {
           console.error("Missing token or chatbotId");
           return;
         }
-        const data = await getChatbotsInfor(token, chatbotId);
+        const data = await getChatbotsInfor(token, Number(chatbotId));
         setChatbotName(data.name || "");
         setDescription(data.description || "");
         if (data.configuration) {
@@ -47,7 +47,7 @@ export default function ChatbotConfigPage() {
     fetchChatbotData();
   }, [chatbotId]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -88,7 +88,7 @@ export default function ChatbotConfigPage() {
       alert("Chatbot updated successfully!");
     } catch (error) {
       console.error("Error updating chatbot:", error);
-      alert(`Failed to update chatbot: ${error.message}`);
+      alert(`Failed to update chatbot`);
     } finally {
       setIsLoading(false);
     }

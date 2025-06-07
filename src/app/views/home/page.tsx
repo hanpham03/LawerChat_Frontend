@@ -23,20 +23,25 @@ export default function Home() {
     resetMessages,
   } = useChat();
 
-  const [chatbotInfo, setChatbotInfo] = useState(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [chatbotInfo, setChatbotInfo] = useState<any>(null);
 
   useEffect(() => {
     if (!selectedSession) {
       resetMessages(); // Reset tin nhắn khi không có phiên nào
     }
-  }, [selectedSession]);
+  }, [selectedSession, resetMessages]);
 
   useEffect(() => {
     async function fetchChatbotInfo() {
       if (!chatbotId) return;
       try {
         const token = localStorage.getItem("token");
-        const data = await getChatbotsInfor(token, chatbotId);
+        if (!token) {
+          console.error("Token not found");
+          return;
+        }
+        const data = await getChatbotsInfor(token, parseInt(chatbotId));
         setChatbotInfo(data);
       } catch (error) {
         console.error("Error fetching chatbot info:", error);
@@ -63,8 +68,11 @@ export default function Home() {
       <div className="flex-grow flex flex-col p-6 bg-white shadow-lg rounded-lg">
         <Chat
           messages={messages}
-          sendMessage={(message) => sendMessage(message, dify_chatbot_id)} // ✅ Đảo lại thứ tự tham số
+          sendMessage={(message: string) =>
+            sendMessage(message, dify_chatbot_id || undefined)
+          } // ✅ Đảo lại thứ tự tham số
           isLoading={isLoading}
+          dify_chatbot_id={dify_chatbot_id || ""}
         />
       </div>
     </div>

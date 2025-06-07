@@ -75,11 +75,6 @@ export async function sendMessageToAPI(
       requestBody.dify_chatbot_id = dify_chatbot_id;
     }
 
-    console.log(
-      "📤 Request gửi đến Dify:",
-      JSON.stringify(requestBody, null, 2)
-    );
-
     try {
       const res = await fetch(`${API_BASE_URL}/chatbots/chat`, {
         method: "POST",
@@ -89,6 +84,7 @@ export async function sendMessageToAPI(
         },
         body: JSON.stringify(requestBody),
       });
+      console.log("ress: ", res);
 
       if (!res.ok) {
         console.error("❌ Lỗi API:", res.status, await res.text());
@@ -116,7 +112,7 @@ export async function deleteChatSessionAPI(sessionId: number, token: string) {
   return res.ok ? data.sessionId : null;
 }
 
-export async function getChatbotsInfor(token: string, id: int) {
+export async function getChatbotsInfor(token: string, id: number) {
   const res = await fetch(`${API_BASE_URL}/chatbots/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,

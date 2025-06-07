@@ -29,7 +29,7 @@ export function useChat() {
   useEffect(() => {
     if (!userId || !token || !chatbotId) return;
 
-    getChatSessions(userId, token, chatbotId)
+    getChatSessions(userId, token, Number(chatbotId))
       .then((sessions) => {
         setChatSessions([...sessions]); // ✅ Sao chép mảng để đảm bảo re-render
       })
@@ -61,7 +61,12 @@ export function useChat() {
     let sessionId = selectedSession;
 
     if (!sessionId) {
-      sessionId = await startNewChatSession(userId, token, chatbotId);
+      if (!chatbotId) return; // hoặc throw error/log
+      sessionId = await startNewChatSession(
+        Number(userId),
+        String(token),
+        Number(chatbotId)
+      );
       if (!sessionId) return;
       setSelectedSession(sessionId);
     }
@@ -70,15 +75,25 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      console.log("📤 Gửi tin nhắn:", text);
-      console.log("📌 dify_chatbot_id:", dify_chatbot_id);
+      // ✅ Xác định chatbotId hợp lệ
+      const chatbotIdToUse =
+        dify_chatbot_id !== null && dify_chatbot_id !== undefined
+          ? Number(dify_chatbot_id)
+          : chatbotId !== null && chatbotId !== undefined
+          ? Number(chatbotId)
+          : null;
+
+      if (chatbotIdToUse === null || isNaN(chatbotIdToUse)) {
+        console.error("❌ Không có chatbotId hợp lệ để gửi tin nhắn");
+        return;
+      }
 
       const botResponse = await sendMessageToAPI(
         sessionId,
         text,
-        token,
+        String(token),
         "user",
-        dify_chatbot_id || chatbotId // ✅ Nếu không có `dify_chatbot_id`, dùng `chatbotId`
+        String(chatbotIdToUse)
       );
 
       if (botResponse) {
@@ -86,7 +101,14 @@ export function useChat() {
           ...prev,
           { text: botResponse, role: "assistant" },
         ]);
-        await sendMessageToAPI(sessionId, botResponse, token, "assistant");
+
+        await sendMessageToAPI(
+          sessionId,
+          botResponse,
+          String(token),
+          "assistant",
+          String(chatbotIdToUse)
+        );
       }
     } catch (error) {
       console.error("❌ Lỗi khi gửi tin nhắn:", error);
@@ -102,7 +124,11 @@ export function useChat() {
       return;
     }
 
-    const sessionId = await startNewChatSession(userId, token, chatbotId);
+    const sessionId = await startNewChatSession(
+      userId,
+      token,
+      Number(chatbotId)
+    );
     if (!sessionId) return;
 
     const newSession = {
@@ -118,7 +144,11 @@ export function useChat() {
 
     // ✅ Gọi API để đồng bộ danh sách chat mới nhất
     try {
-      const updatedSessions = await getChatSessions(userId, token, chatbotId);
+      const updatedSessions = await getChatSessions(
+        userId,
+        token,
+        Number(chatbotId)
+      );
       setChatSessions(updatedSessions);
     } catch (error) {
       console.error("Lỗi cập nhật danh sách phiên chat:", error);

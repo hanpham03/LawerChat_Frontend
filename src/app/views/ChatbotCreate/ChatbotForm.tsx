@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+// @ts-expect-error - Ignore type error for js-cookie until types are installed
 import Cookies from "js-cookie";
 import { handleChatbotTags } from "./ChatbotTags";
 import ProviderModelSelector from "@/components/my_components/ProviderModelSelector";
@@ -21,12 +22,14 @@ const providerMapping: { [key: string]: string } = {
 
 export default function ChatbotForm() {
   const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
 
   const [formData, setFormData] = useState({
-    user_id: null,
+    user_id: null as number | null,
     name: "",
     description: "",
     prompt: "",
@@ -36,9 +39,26 @@ export default function ChatbotForm() {
     mode: "chat",
   });
 
+  // Close icon picker on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setShowIconPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem("token") || Cookies.get("token");
-    if (!token) return toast.error("Không tìm thấy token, vui lòng đăng nhập.");
+    if (!token) {
+      toast.error("Không tìm thấy token, vui lòng đăng nhập.");
+      return;
+    }
 
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
@@ -49,11 +69,18 @@ export default function ChatbotForm() {
     }
   }, []);
 
-  const handleChange = (e: any) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleIconSelect = (icon: string) => {
+    setFormData((prev) => ({ ...prev, icon }));
+    setShowIconPicker(false);
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -61,23 +88,6 @@ export default function ChatbotForm() {
       const dify_token =
         localStorage.getItem("dify_token") || Cookies.get("dify_token");
       if (!dify_token) throw new Error("Token không hợp lệ.");
-      console.log(
-        "Dữ liệu gửi lên server:",
-        JSON.stringify(
-          {
-            user_id: formData.user_id,
-            name: formData.name,
-            description: formData.description,
-            prompt: formData.prompt,
-            icon: formData.icon,
-            provider: providerMapping[formData.provider] || formData.provider, // Chuyển thành chữ thường
-            model: formData.model,
-            mode: "chat", // Thêm mode mặc định
-          },
-          null,
-          2
-        )
-      );
 
       const response = await fetch(
         "http://localhost:3001/api/chatbots/create-chatbot",
@@ -93,9 +103,9 @@ export default function ChatbotForm() {
             description: formData.description,
             prompt: formData.prompt,
             icon: formData.icon,
-            provider: providerMapping[formData.provider] || formData.provider, // Chuyển thành chữ thường
+            provider: providerMapping[formData.provider] || formData.provider,
             nameModel: formData.model,
-            mode: "chat", // Thêm mode mặc định
+            mode: "chat",
           }),
         }
       );
@@ -106,8 +116,9 @@ export default function ChatbotForm() {
       await handleChatbotTags(email, data.chatbotId, dify_token);
       toast.success("Tạo chatbot thành công!");
       router.push("/views/ChatbotLists");
-    } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Có lỗi xảy ra";
+      toast.error(`Lỗi: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -120,17 +131,44 @@ export default function ChatbotForm() {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Tên Chatbot */}
-        <div>
+        {/* Tên Chatbot với chọn icon */}
+        <div className="relative">
           <Label htmlFor="name">Tên Chatbot</Label>
-          <Input
-            id="name"
-            name="name"
-            placeholder="Nhập tên chatbot"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setShowIconPicker((show) => !show)}
+              className="text-2xl"
+            >
+              {formData.icon}
+            </button>
+            <Input
+              id="name"
+              name="name"
+              placeholder="Nhập tên chatbot"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          {showIconPicker && (
+            <div
+              ref={dropdownRef}
+              className="absolute z-10 mt-2 grid grid-cols-5 gap-2 bg-white p-2 border rounded shadow-md"
+            >
+              {availableIcons.map((icon) => (
+                <button
+                  key={icon}
+                  type="button"
+                  onClick={() => handleIconSelect(icon)}
+                  className="p-1 text-2xl hover:bg-gray-100 rounded"
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Mô tả */}

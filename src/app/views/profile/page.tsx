@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 interface UserProfile {
   _id: string;
   name: string; // Assuming your User model has a name field
+  full_name: string; // Add full_name field that's used in the component
   email: string;
   // Không có password vì API không trả về password
   createdAt?: string;
@@ -49,9 +50,11 @@ const ProfilePage: React.FC = () => {
 
         const data = await response.json();
         setUserProfile(data);
-      } catch (err) {
-        setError(err.message);
-        toast.error(`Lỗi: ${err.message}`);
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Có lỗi xảy ra";
+        setError(errorMessage);
+        toast.error(`Lỗi: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -68,7 +71,7 @@ const ProfilePage: React.FC = () => {
   };
 
   // Function to format date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | undefined): string => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString("vi-VN", {

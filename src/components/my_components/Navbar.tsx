@@ -9,28 +9,34 @@ import { FaBalanceScale } from "react-icons/fa";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { jwtDecode } from "jwt-decode";
 
+interface DecodedToken {
+  role?: string;
+  id?: number;
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [role, setRole] = useState<string | null>(null);
-  const [userid, setUserId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
 
   // 🟢 Hàm lấy role từ token
   const fetchRole = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setRole(null);
+      setUserId(null);
       return;
     }
 
     try {
-      const decodedToken = jwtDecode<{ role?: string }>(token); // 🛠️ Giải mã token
-      const userid = jwtDecode<{ id?: number }>(token); // 🛠️ Giải mã token
-      setUserId(userid);
+      const decodedToken: DecodedToken = jwtDecode(token); // 🛠️ Giải mã token
+      setUserId(decodedToken.id || null);
       setRole(decodedToken.role || null);
     } catch (error) {
       console.error("Lỗi giải mã token:", error);
       setRole(null);
+      setUserId(null);
     }
   };
 
@@ -63,9 +69,9 @@ export default function Navbar() {
 
   // 📝 Danh sách link điều hướng dành cho ADMIN
   const adminNavLinks = [
-    { href: "/views/ManageChatbots", label: "Quản Lý Chatbots" },
-    { href: "/views/ManageBlog", label: "Quản Lý Bài Viết" },
-    { href: "/views/ConfigChatbot", label: "Huấn Luyện Chatbot" },
+    { href: "/views/admin/ManageChatbots", label: "Chatbots List" },
+    { href: "/views/admin/ManageBlog", label: "Manage Blogs" },
+    { href: "/views/admin/ChatbotConfig", label: "Chatbot Config" },
   ];
 
   // 📝 Danh sách link điều hướng dành cho USER
@@ -77,6 +83,9 @@ export default function Navbar() {
 
   // Chọn danh sách link phù hợp với role
   const navLinks = role === "admin" ? adminNavLinks : userNavLinks;
+
+  // Để tránh warning về userId không được sử dụng, ta có thể log nó hoặc dùng nó ở đâu đó
+  console.log("Current user ID:", userId);
 
   return (
     <header className="bg-white shadow sticky top-0 z-50 w-full">

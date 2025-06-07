@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 
-// Danh sách các provider và model
-const providers = {
+// Danh sách các provider và model với proper typing
+const providers: Record<string, string[]> = {
   OpenRouter: [
     "openai/gpt-3.5-turbo",
     "google/gemini-pro-1.5",
@@ -126,7 +126,7 @@ export default function ProviderModelSelector({
           }}
           className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          {(providers[selectedProvider] || []).map((mod) => (
+          {(providers[selectedProvider] || []).map((mod: string) => (
             <option key={mod} value={mod}>
               {mod}
             </option>

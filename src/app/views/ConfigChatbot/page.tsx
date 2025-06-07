@@ -14,24 +14,31 @@ export default function ChatbotInterface() {
   const [userInput, setUserInput] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState<boolean>(false);
+  const difyChatbotId = "default_chatbot_id";
 
-  const sendMessage = (message: string, role: string): void => {
-    setMessages((prev) => [...prev, { id: Date.now(), role, text: message }]);
+  const sendMessage = (message: string, dify_chatbot_id?: string): void => {
+    // Add user message
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), role: "user", text: message },
+    ]);
 
-    if (role === "user") {
-      setIsLoading(true);
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            role: "bot",
-            text: "Xin chào! Tôi có thể giúp gì?",
-          },
-        ]);
-        setIsLoading(false);
-      }, 1000);
-    }
+    // Simulate bot response
+    setIsLoading(true);
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "bot",
+          text: "Xin chào! Tôi có thể giúp gì?",
+        },
+      ]);
+      setIsLoading(false);
+    }, 1000);
+
+    // Use dify_chatbot_id if needed (currently just for compatibility)
+    console.log("Using dify_chatbot_id:", dify_chatbot_id);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,6 +113,7 @@ export default function ChatbotInterface() {
           messages={messages}
           sendMessage={sendMessage}
           isLoading={isLoading}
+          dify_chatbot_id={difyChatbotId}
         />
       </div>
     </div>
