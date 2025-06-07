@@ -1,5 +1,12 @@
 "use client";
 
+// ✅ Add interface for tag
+interface Tag {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export async function handleChatbotTags(
   email: string,
   chatbotId: string,
@@ -19,7 +26,7 @@ export async function handleChatbotTags(
     );
 
     const tagsData = await tagsResponse.json();
-    let existingTag = tagsData.find((tag: any) => tag.name === email);
+    let existingTag = tagsData.find((tag: Tag) => tag.name === email); // ✅ Fix: any → Tag
 
     if (!existingTag) {
       console.log("Chưa có tag với email:", email);
@@ -71,7 +78,10 @@ export async function handleChatbotTags(
     }
 
     return `Tạo chatbot cho ${email} và gán vào tag thành công!`;
-  } catch (error: any) {
-    throw new Error(`Lỗi xử lý tag: ${error.message}`);
+  } catch (error: unknown) {
+    // ✅ Fix: any → unknown
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Lỗi xử lý tag: ${errorMessage}`);
   }
 }

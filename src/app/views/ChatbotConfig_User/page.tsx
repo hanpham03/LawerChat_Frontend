@@ -47,7 +47,7 @@ export default function ChatbotConfigPage() {
     fetchChatbotData();
   }, [chatbotId]);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
