@@ -1,4 +1,5 @@
 "use client";
+<<<<<<< HEAD
 
 import { useState, useCallback } from "react";
 
@@ -91,6 +92,46 @@ export default function FileUploadOnly() {
   ) => {
     if (event.target.files && event.target.files.length > 0) {
       handleFileSelection(event.target.files[0]);
+=======
+import { useState } from "react";
+import Chat from "@/components/my_components/chat"; // Điều chỉnh đường dẫn import tùy dự án
+
+interface Message {
+  id: number;
+  role: string;
+  text: string;
+}
+
+export default function ChatbotInterface() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [userInput, setUserInput] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState<boolean>(false);
+
+  const sendMessage = (message: string, role: string): void => {
+    setMessages((prev) => [...prev, { id: Date.now(), role, text: message }]);
+
+    if (role === "user") {
+      setIsLoading(true);
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: "bot",
+            text: "Xin chào! Tôi có thể giúp gì?",
+          },
+        ]);
+        setIsLoading(false);
+      }, 1000);
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setFile(event.target.files[0]);
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
     }
   };
 
@@ -98,7 +139,11 @@ export default function FileUploadOnly() {
     event.preventDefault();
     setDragging(false);
     if (event.dataTransfer.files.length > 0) {
+<<<<<<< HEAD
       handleFileSelection(event.dataTransfer.files[0]);
+=======
+      setFile(event.dataTransfer.files[0]);
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
     }
   };
 
@@ -111,6 +156,7 @@ export default function FileUploadOnly() {
     setDragging(false);
   };
 
+<<<<<<< HEAD
   const handleDelete = async (uiId: number, docId: string) => {
     setError(null);
     try {
@@ -208,6 +254,58 @@ export default function FileUploadOnly() {
             </tbody>
           </table>
         )}
+=======
+  return (
+    <div className="h-[600px] w-full flex bg-gray-100">
+      {/* Phần trái: ô nhập văn bản + khung upload file */}
+      <div className="w-1/2 grid grid-rows-[2fr,3fr] gap-4 border-r p-4">
+        {/* Ô nhập văn bản */}
+        <div className="bg-white p-4 rounded-lg shadow-md flex flex-col">
+          <h2 className="text-lg font-semibold">✍ Nhập Prompt của bạn</h2>
+          <textarea
+            className="mt-2 p-2 border rounded-md w-full h-full"
+            placeholder="Viết hướng dẫn cho chatbot của bạn..."
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+          />
+        </div>
+        {/* Ô upload file */}
+        <div
+          className={`p-4 rounded-lg shadow-md flex flex-col items-center justify-center border-2 border-dashed ${
+            dragging
+              ? "border-blue-500 bg-blue-100"
+              : "border-gray-300 bg-gray-50"
+          }`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          <h2 className="text-lg font-semibold mb-2">
+            📜 Kéo thả file hoặc nhấn để tải lên
+          </h2>
+          <input
+            type="file"
+            className="hidden"
+            id="fileUpload"
+            onChange={handleFileUpload}
+          />
+          <label
+            htmlFor="fileUpload"
+            className="cursor-pointer bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+          >
+            Chọn file
+          </label>
+          {file && <p className="mt-2 text-gray-600">📄 {file.name}</p>}
+        </div>
+      </div>
+      {/* Phần phải: component Chat */}
+      <div className="w-1/2 p-4">
+        <Chat
+          messages={messages}
+          sendMessage={sendMessage}
+          isLoading={isLoading}
+        />
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+<<<<<<< HEAD
 import {
   FilePlus,
   X,
@@ -41,15 +42,27 @@ interface MessageData {
   role: "user" | "assistant";
   created_at: string;
 }
+=======
+import { PlusCircle, Trash, Send } from "lucide-react";
+import { sendMessageToAPI } from "@/app/utils/api";
+import { jwtDecode } from "jwt-decode";
+import CustomMarkdown from "@/components/my_components/markdown";
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+<<<<<<< HEAD
   const [history, setHistory] = useState<ChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(
     null
   );
   const [userId, setUserId] = useState<number | null>(null);
+=======
+  const [history, setHistory] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [userId, setUserId] = useState(null);
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -57,7 +70,11 @@ export default function ChatPage() {
     const token = localStorage.getItem("token");
     if (token) {
       try {
+<<<<<<< HEAD
         const decoded = jwtDecode<JwtPayloadExtended>(token);
+=======
+        const decoded = jwtDecode(token);
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
         setUserId(decoded.id);
       } catch (error) {
         console.error("Lỗi giải mã token:", error);
@@ -94,9 +111,15 @@ export default function ChatPage() {
     };
 
     fetchHistory();
+<<<<<<< HEAD
   }, [userId, selectedSessionId]); // Thêm selectedSessionId để refresh khi cần
 
   const selectSession = async (sessionId: number) => {
+=======
+  }, [userId]); // Chỉ phụ thuộc vào userId, không phụ thuộc vào selectedSessionId
+
+  const selectSession = async (sessionId) => {
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
     setSelectedSessionId(sessionId);
 
     try {
@@ -110,7 +133,11 @@ export default function ChatPage() {
       if (data.length === 0) {
         setMessages([]);
       } else {
+<<<<<<< HEAD
         const formattedMessages = data.map((msg: MessageData) => ({
+=======
+        const formattedMessages = data.map((msg) => ({
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
           id: msg.id,
           text: msg.content,
           sender: msg.role === "user" ? "user" : "bot",
@@ -162,7 +189,11 @@ export default function ChatPage() {
     }
   };
 
+<<<<<<< HEAD
   const deleteSession = async (sessionId: number) => {
+=======
+  const deleteSession = async (sessionId) => {
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
     if (!sessionId) {
       console.error("sessionId không hợp lệ");
       return;
@@ -229,6 +260,7 @@ export default function ChatPage() {
       return;
     }
 
+<<<<<<< HEAD
     // Lưu tin nhắn của người dùng vào database
     try {
       await fetch("http://localhost:3001/api/messages", {
@@ -247,10 +279,21 @@ export default function ChatPage() {
       console.error("Lỗi khi lưu tin nhắn người dùng vào database:", error);
     }
 
+=======
+    const userMsgId = `${selectedSessionId}-user-${Date.now()}`;
+    const newMessage = {
+      id: userMsgId,
+      text: input,
+      sender: "user",
+    };
+
+    setMessages([...messages, newMessage]);
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
     setInput("");
     setIsLoading(true);
 
     try {
+<<<<<<< HEAD
       const response = await fetch("http://localhost/v1/chat-messages", {
         method: "POST",
         headers: {
@@ -315,6 +358,25 @@ export default function ChatPage() {
           {
             id: botMsgId,
             text: answer,
+=======
+      setIsLoading(true);
+      const response = await sendMessageToAPI(
+        selectedSessionId,
+        input,
+        token,
+        "user"
+      );
+
+      if (response) {
+        await sendMessageToAPI(selectedSessionId, response, token, "assistant");
+
+        const botMsgId = `${selectedSessionId}-bot-${Date.now()}`;
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: botMsgId,
+            text: response,
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
             sender: "bot",
           },
         ]);
@@ -338,13 +400,18 @@ export default function ChatPage() {
         }
       }
     } catch (error) {
+<<<<<<< HEAD
       console.error("Lỗi khi gửi hoặc xử lý phản hồi:", error);
+=======
+      console.error("Lỗi gửi tin nhắn:", error);
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
+<<<<<<< HEAD
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Main Content - takes remaining height */}
       <div className="flex flex-1 overflow-hidden">
@@ -407,12 +474,58 @@ export default function ChatPage() {
                 >
                   <FilePlus size={16} />
                   Bắt đầu hội thoại đầu tiên
+=======
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Sidebar Lịch sử Chat */}
+      <div className="w-[300px] bg-white border-r shadow-lg flex flex-col h-full max-h-screen overflow-hidden">
+        <div className="p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            🤖 Chatbot Tư Vấn Luật
+          </h2>
+        </div>
+        <div className="flex items-center justify-between p-4 bg-gray-50">
+          <h3 className="font-semibold flex items-center gap-2 text-gray-700">
+            📒 Lịch sử Chat
+          </h3>
+          <button
+            className="flex items-center gap-1 text-white bg-blue-600 px-3 py-1 rounded-full hover:bg-blue-700 transition-colors"
+            onClick={createNewSession}
+          >
+            <PlusCircle size={18} />
+            Thêm
+          </button>
+        </div>
+        <div className="flex-grow overflow-y-auto p-2 space-y-2 h-[500px] mb-[64px]">
+          {history.length > 0 ? (
+            history.map((session) => (
+              <div
+                key={session.id}
+                className={`p-3 rounded-lg flex items-center justify-between hover:bg-blue-100 transition-colors cursor-pointer ${
+                  selectedSessionId === session.id
+                    ? "bg-blue-200"
+                    : "bg-blue-50"
+                }`}
+                onClick={() => selectSession(session.id)}
+              >
+                <span className="flex items-center gap-2">
+                  💬 Phiên {session.id} - {session.time}
+                </span>
+                <button
+                  className="text-white bg-red-500 p-1 rounded-full hover:bg-red-600 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteSession(session.id);
+                  }}
+                >
+                  <Trash size={16} />
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
                 </button>
               </div>
             )}
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* Chat Area - Flexible width */}
         <div className="flex-grow flex flex-col bg-white h-full">
           {/* Chat Header */}
@@ -524,6 +637,60 @@ export default function ChatPage() {
               </p>
             )}
           </div>
+=======
+      {/* Khung Chat Chính */}
+      {/* Chat window updated with CustomMarkdown */}
+      <div className="w-[500px] flex-grow flex flex-col bg-white shadow-xl rounded-lg m-4">
+        <div className="flex-grow p-6 overflow-y-auto space-y-4 mb-[64px] relative">
+          {messages.length === 0 && !isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-lg">
+              Chưa có tin nhắn nào
+            </div>
+          )}
+          {messages.map((msg) => (
+            <div
+              key={`message-${msg.id}`}
+              className={`flex ${
+                msg.sender === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[70%] px-4 py-2 rounded-xl shadow-sm ${
+                  msg.sender === "user"
+                    ? "bg-green-500 text-white"
+                    : "bg-blue-50 text-gray-800 border border-blue-100"
+                }`}
+              >
+                <CustomMarkdown>{msg.text}</CustomMarkdown>
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-[70%] px-4 py-2 rounded-xl shadow-sm bg-blue-50 text-gray-800 border border-blue-100">
+                Đang phản hồi...
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Message input area remains the same */}
+        <div className="p-4 border-t bg-white flex items-center sticky bottom-0">
+          <input
+            type="text"
+            className="flex-grow p-3 border border-gray-200 rounded-full outline-none focus:ring-2 focus:ring-blue-300 transition-all bg-gray-50"
+            placeholder="Nhập tin nhắn..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          />
+          <button
+            className="ml-3 bg-green-500 text-white p-3 rounded-full hover:bg-green-600 transition-colors"
+            onClick={sendMessage}
+          >
+            <Send size={20} />
+          </button>
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
         </div>
       </div>
     </div>

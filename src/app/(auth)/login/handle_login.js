@@ -64,7 +64,7 @@ export default function LoginForm() {
           router.push("/views/ChatbotLists");
         }
       } catch (err) {
-        console.warn("Không thể giải mã token, chuyển hướng mặc định.");
+        console.warn("Không thể giải mã token, chuyển hướng mặc định.", err);
         router.push("/views/ChatbotLists");
       }
     } catch (err) {

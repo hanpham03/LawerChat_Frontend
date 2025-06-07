@@ -18,6 +18,7 @@ interface Chatbot {
 
 interface DecodedToken {
   id: string;
+<<<<<<< HEAD
 }
 
 interface DifyChatbot {
@@ -30,6 +31,8 @@ interface Session {
   id: number;
   chatbot_id: number;
   user_id: string;
+=======
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
 }
 
 export default function ChatbotList() {

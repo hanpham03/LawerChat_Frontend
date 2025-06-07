@@ -69,9 +69,15 @@ export default function Navbar() {
 
   // 📝 Danh sách link điều hướng dành cho ADMIN
   const adminNavLinks = [
+<<<<<<< HEAD
     { href: "/views/admin/ManageChatbots", label: "Chatbots List" },
     { href: "/views/admin/ManageBlog", label: "Manage Blogs" },
     { href: "/views/admin/ChatbotConfig", label: "Chatbot Config" },
+=======
+    { href: "/views/admin/ManageChatbots", label: "Quản Lý Chatbots" },
+    { href: "/views/admin/ManageBlog", label: "Quản Lý Bài Viết" },
+    { href: "/views/admin/ChatbotConfig", label: "Huấn Luyện Chatbot" },
+>>>>>>> 8854e0c772d2ba22878b86a4d5517864963777dd
   ];
 
   // 📝 Danh sách link điều hướng dành cho USER

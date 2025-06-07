@@ -76,6 +76,7 @@ export async function sendMessageToAPI(
     }
 
     try {
+      console.log("abcd: ", difyToken);
       const res = await fetch(`${API_BASE_URL}/chatbots/chat`, {
         method: "POST",
         headers: {
