@@ -280,27 +280,58 @@ export default function ChatPage() {
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+        buffer += chunk;
+
+        // Tách các dòng hoàn chỉnh từ buffer
+        const lines = buffer.split("\n");
+        // Giữ lại dòng cuối (có thể chưa hoàn chỉnh) trong buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("data:")) {
             const jsonString = line.replace("data: ", "").trim();
             if (!jsonString || jsonString === "[DONE]") continue;
 
-            buffer += jsonString;
-
             try {
-              const dataJson = JSON.parse(buffer);
+              const dataJson = JSON.parse(jsonString);
               if (dataJson.event === "workflow_finished") {
                 answer = dataJson.data?.outputs?.answer || "";
               }
-              buffer = "";
             } catch (err) {
               console.error(
                 "Lỗi phân tích JSON từ stream:",
                 err,
+                "Chuỗi JSON length:",
+                jsonString.length,
+                "First 100 chars:",
+                jsonString.substring(0, 100),
+                "Last 100 chars:",
+                jsonString.substring(Math.max(0, jsonString.length - 100))
+              );
+              // Tiếp tục xử lý các dòng khác thay vì dừng lại
+              continue;
+            }
+          }
+        }
+      }
+
+      // Xử lý dòng cuối cùng còn lại trong buffer (nếu có)
+      if (buffer.trim()) {
+        const line = buffer.trim();
+        if (line.startsWith("data:")) {
+          const jsonString = line.replace("data: ", "").trim();
+          if (jsonString && jsonString !== "[DONE]") {
+            try {
+              const dataJson = JSON.parse(jsonString);
+              if (dataJson.event === "workflow_finished") {
+                answer = dataJson.data?.outputs?.answer || "";
+              }
+            } catch (err) {
+              console.error(
+                "Lỗi phân tích JSON từ buffer cuối:",
+                err,
                 "Chuỗi JSON:",
-                buffer
+                jsonString.substring(0, 200) + "..."
               );
             }
           }
